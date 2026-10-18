@@ -11,8 +11,8 @@ test('browser event handlers claim, upgrade, boost and reset only local pretend 
   Date.now = () => now;
   globalThis.document = {getElementById:el};
   globalThis.localStorage = {getItem:key => memory.get(key) ?? null,setItem:(key,value) => memory.set(key,value)};
-  let interval=null;
-  globalThis.setInterval = fn => {interval=fn;return 1};
+  let intervals=[];
+  globalThis.setInterval = (fn,delay) => {intervals.push({fn,delay});return intervals.length};
   globalThis.setTimeout=()=>1;globalThis.clearTimeout=()=>{};
   memory.set('virtual-miner:local-demo:v1',JSON.stringify({version:1,tier:0,banked:200,pending:0,allTime:200,lastTickMs:now,boostUntilMs:0}));
   await import('../src/browser.mjs');
@@ -20,7 +20,7 @@ test('browser event handlers claim, upgrade, boost and reset only local pretend 
   assert.equal(el('pending').textContent,'0');
   el('upgrade').click();assert.equal(el('tier').textContent,'Desktop thunder');
   el('boost').click();assert.match(el('boost').textContent,/active/);
-  now+=1000;interval();assert.equal(el('pending').textContent,'6');
+  now+=1000;intervals.find(x=>x.delay===1000).fn();assert.equal(el('pending').textContent,'6');
   el('claim').click();assert.equal(el('banked').textContent,'161');
   el('reset').click();assert.equal(el('banked').textContent,'0');
   assert.equal(JSON.parse(memory.get('virtual-miner:local-demo:v1')).banked,0);
