@@ -1,4 +1,5 @@
 import {mountContractDemo} from './contract-browser.mjs';
+import {mountRegtestCatalogPreview} from './regtest-catalog-client.mjs';
 import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -59,4 +60,6 @@ $('reset').addEventListener('click', () => {
 });
 view();
 const contracts=mountContractDemo(document);
+const laboratory=mountRegtestCatalogPreview(document);
 setInterval(() => { view(); contracts.refresh?.(); }, 1000);
+setInterval(() => { void laboratory.refresh?.(); }, 15000);
