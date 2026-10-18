@@ -76,7 +76,7 @@ test("caller cannot submit a paid plan or Bitcoin-denominated browser plan",()=>
  assert.throws(()=>admitSimulationPlans([{...plans[0],hashrate:5}]),/cannot promise/);
 });
 test("source rejects duplicated plan IDs and malformed amounts",()=>{
- assert.throws(()=>admitSimulationPlans([plans[0],plans[0]]),/duplicate/);
+ assert.throws(()=>admitSimulationPlans([plans[0],plans[0]]),/unique slug/);
  assert.throws(()=>admitSimulationPlans([{...plans[0],ratePointsPerSecond:-1}]),/bounded/);
  assert.throws(()=>admitSimulationPlans([{...plans[0],durationSeconds:365*86400+1}]),/bounded/);
 });
