@@ -3,6 +3,7 @@
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { admitSimulationPlans } from '../src/contract-experience.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const esc = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
@@ -31,11 +32,31 @@ export function validateConfig(config) {
       !(url.hostname === 'koios.news' || url.hostname === '561.group' || url.hostname.endsWith('.561.group')))
       throw new TypeError('demo house promotion URL must be a verified HTTPS 561 public property');
   }
+  if (config.simulationPlans !== undefined) admitSimulationPlans(config.simulationPlans);
   return config;
 }
 export function renderHtml(config) {
   validateConfig(config);
   const cards = config.promotions.map(p => `<article class="promo"><span class="small-label">From 561 Group · No reward</span><h3>${esc(p.label)}</h3><p>${esc(p.description)}</p><a rel="noopener noreferrer" href="${esc(p.href)}">Explore ${esc(p.label)} →</a></article>`).join('\n');
+
+  const plans = config.simulationPlans ?? [];
+  const planButtons = plans.map(p => '<button type="button" class="secondary" data-demo-plan-id="' + esc(p.id) + '">' +
+    esc(p.label) + ' · ' + (p.durationSeconds / 3600) + 'h</button>').join('');
+  const contractSection = plans.length ? '<section class="panel widepanel" aria-labelledby="contract-heading">' +
+    '<div class="small-label">Finite contracts · Browser-only · Demo credits</div>' +
+    '<h2 id="contract-heading">Your imaginary mining contracts</h2>' +
+    '<p>Start a free plan or claim your daily check-in. Independent timers stack, then expire. These produce only pretend points. No paid ad, miner purchase, or Bitcoin payout happens here.</p>' +
+    '<div class="contract-buttons">' + planButtons + '</div>' +
+    '<div class="stats"><div class="stat"><span class="small-label">Active contracts</span><b id="contract-active">0</b></div>' +
+    '<div class="stat"><span class="small-label">Virtual contract rate</span><b id="contract-rate">0 demo points/sec</b></div>' +
+    '<div class="stat"><span class="small-label">Unclaimed demo points</span><b id="contract-pending">0</b></div>' +
+    '<div class="stat"><span class="small-label">Collected demo points</span><b id="contract-claimed">0</b></div></div>' +
+    '<ul id="contract-list" class="contract-list" aria-label="Current virtual contracts"></ul>' +
+    '<button id="contract-claim" class="wide" type="button">Collect demo points</button>' +
+    '<p id="contract-feedback" role="status" aria-live="polite" class="feedback"></p>' +
+    '<div hidden id="plan-definitions" data-plans="' + esc(JSON.stringify(plans)) + '"></div>' +
+    '<p class="fine muted">UTC claim limits and expiry are enforced locally for play; reload keeps your progress on this device. Browser storage is not trusted money accounting.</p>' +
+    '</section>' : '';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(config.brand)} — free simulation</title><meta name="description" content="${esc(config.description)}">
@@ -45,6 +66,7 @@ export function renderHtml(config) {
 <section class="hero"><div><div class="small-label">Cloud mining, without the cloud mining</div><h1>${esc(config.brand)}</h1><p>Acquire an imaginary miner. Watch the counter trickle. Upgrade the rig. <strong>It's just a game.</strong> No money down, no mining hardware, no wallet, no real Bitcoin earned.</p></div><div class="rig-art" aria-hidden="true"></div></section>
 <div class="caution" role="note"><strong>Demo mode:</strong> All points here are pretend, non-transferable and worth $0. This is not real Bitcoin mining or a cryptocurrency faucet. No withdrawable satoshis or purchasable miners are currently available.</div>
 <div class="layout">
+${contractSection}
 <section class="panel" aria-labelledby="machine-heading"><div class="small-label">Your imaginary rig</div><h2 id="machine-heading">A little bit of nothing, forever</h2>
 <div class="numbers"><output id="pending" aria-label="Unclaimed virtual points">0</output><span>pending demo points</span></div><div class="meter" aria-hidden="true"></div>
 <div class="stats"><div class="stat"><span class="small-label">Demo wallet (not BTC)</span><b id="banked">0</b></div><div class="stat"><span class="small-label">Current animation rate</span><b id="rate">1 point / sec</b></div><div class="stat"><span class="small-label">Virtual rig tier</span><b id="tier">Pocket cloud</b></div><div class="stat"><span class="small-label">Multiplier</span><b id="tier-multiplier">1× base rate</b></div></div>
@@ -64,7 +86,7 @@ export async function build({configPath, outPath}) {
   await mkdir(join(dest, 'assets'), {recursive:true});
   await mkdir(join(dest, 'api'), {recursive:true});
   await writeFile(join(dest, 'index.html'), renderHtml(config));
-  for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/style.css','assets/style.css']])
+  for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/contract-experience.mjs','assets/contract-experience.mjs'], ['src/contract-browser.mjs','assets/contract-browser.mjs'], ['src/style.css','assets/style.css']])
     await copyFile(join(root, from), join(dest, to));
   await writeFile(join(dest, 'api/status.json'), JSON.stringify({
     kind: '561-group.assist-demo-status/v1', brand:config.brand, host:config.host,
@@ -76,7 +98,7 @@ export async function build({configPath, outPath}) {
   }, null, 2) + '\n');
   await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
   await writeFile(join(dest, 'robots.txt'), 'User-agent: *\nAllow: /\n');
-  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
+  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
 }
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
