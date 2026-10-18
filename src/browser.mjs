@@ -1,3 +1,4 @@
+import {mountContractDemo} from './contract-browser.mjs';
 import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -57,4 +58,5 @@ $('reset').addEventListener('click', () => {
   state = newDemo(Date.now()); save(); view(); notice('Local demo reset. Nothing real was ever earned.');
 });
 view();
-setInterval(view, 1000);
+const contracts=mountContractDemo(document);
+setInterval(() => { view(); contracts.refresh?.(); }, 1000);
