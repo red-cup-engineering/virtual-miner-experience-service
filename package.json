@@ -1,0 +1,9 @@
+{
+  "name": "@red-cup-engineering/virtual-miner-experience-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable and truthful virtual miner demo: reusable Engineering code, customer-configured Causeway site.",
+  "engines": {"node": ">=22"},
+  "scripts": {"test": "node --test", "build": "node scripts/build.mjs"}
+}
