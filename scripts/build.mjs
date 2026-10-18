@@ -57,6 +57,11 @@ export function renderHtml(config) {
     '<div hidden id="plan-definitions" data-plans="' + esc(JSON.stringify(plans)) + '"></div>' +
     '<p class="fine muted">UTC claim limits and expiry are enforced locally for play; reload keeps your progress on this device. Browser storage is not trusted money accounting.</p>' +
     '</section>' : '';
+  const regtestSection = '<details class="panel widepanel" id="regtest-lab">' +
+    '<summary class="arcade-summary">Developer laboratory · read-only regtest availability</summary>' +
+    '<p id="regtest-capacity" role="status" aria-live="polite">' +
+    'Regtest backend not connected. No real Bitcoin or paid ad rewards are enabled.' +
+    '</p><p class="fine muted">This is not checkout, a wallet or a balance. Only an installed local regtest operator service can provide a capacity quote. All financial actions remain disabled.</p></details>';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(config.brand)} — free simulation</title><meta name="description" content="${esc(config.description)}">
@@ -67,6 +72,7 @@ export function renderHtml(config) {
 <div class="caution" role="note"><strong>Demo mode:</strong> All points here are pretend, non-transferable and worth $0. This is not real Bitcoin mining or a cryptocurrency faucet. No withdrawable satoshis or purchasable miners are currently available.</div>
 <div class="layout">
 ${contractSection}
+${regtestSection}
 <details class="panel widepanel" id="arcade-mode"><summary class="arcade-summary">Optional endless arcade workshop · separate pretend balance</summary><p class="fine muted">This legacy sandbox is independent from your eight-hour and daily contracts. Arcade claims, tiers and boosts do not change those contracts or earn Bitcoin.</p><div class="arcade-grid"><section class="panel" aria-labelledby="machine-heading"><div class="small-label">Your imaginary rig</div><h2 id="machine-heading">A little bit of nothing, forever</h2>
 <div class="numbers"><output id="pending" aria-label="Unclaimed virtual points">0</output><span>pending demo points</span></div><div class="meter" aria-hidden="true"></div>
 <div class="stats"><div class="stat"><span class="small-label">Demo wallet (not BTC)</span><b id="banked">0</b></div><div class="stat"><span class="small-label">Current animation rate</span><b id="rate">1 point / sec</b></div><div class="stat"><span class="small-label">Virtual rig tier</span><b id="tier">Pocket cloud</b></div><div class="stat"><span class="small-label">Multiplier</span><b id="tier-multiplier">1× base rate</b></div></div>
@@ -87,7 +93,7 @@ export async function build({configPath, outPath}) {
   await mkdir(join(dest, 'assets'), {recursive:true});
   await mkdir(join(dest, 'api'), {recursive:true});
   await writeFile(join(dest, 'index.html'), renderHtml(config));
-  for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/contract-experience.mjs','assets/contract-experience.mjs'], ['src/contract-browser.mjs','assets/contract-browser.mjs'], ['src/style.css','assets/style.css']])
+  for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/contract-experience.mjs','assets/contract-experience.mjs'], ['src/contract-browser.mjs','assets/contract-browser.mjs'], ['src/regtest-catalog-client.mjs','assets/regtest-catalog-client.mjs'], ['src/style.css','assets/style.css']])
     await copyFile(join(root, from), join(dest, to));
   await writeFile(join(dest, 'api/status.json'), JSON.stringify({
     kind: '561-group.assist-demo-status/v1', brand:config.brand, host:config.host,
@@ -97,9 +103,9 @@ export async function build({configPath, outPath}) {
     playableDemo:true, storage:'local-browser-only',
     nextMilestones:['provider-permitted-paid-ad', 'financially-funded-sats-rewards', 'signed-postback-and-reversal', 'independent-public-receiving'],
   }, null, 2) + '\n');
-  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
+  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
   await writeFile(join(dest, 'robots.txt'), 'User-agent: *\nAllow: /\n');
-  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
+  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
 }
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
