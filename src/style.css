@@ -7,3 +7,9 @@
 .contract-list{display:grid;gap:.5rem;padding:0;list-style:none;margin:1.2rem 0}
 .contract-list li{border:1px solid #405572;background:#152941;border-radius:10px;padding:.8rem 1rem;color:#d6e5f1}
 @media(max-width:620px){.contract-buttons{grid-template-columns:1fr}}
+
+/* Keep the old unlimited idle sandbox opt-in, distinct from finite plans. */
+.arcade-summary{cursor:pointer;font-weight:800;font-size:1.05rem;color:#d4f5f1;padding:.4rem 0;list-style-position:inside}
+.arcade-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr);gap:1rem;margin-top:1.1rem}
+.arcade-grid>.panel{background:#111d30}
+@media(max-width:770px){.arcade-grid{grid-template-columns:1fr}}
