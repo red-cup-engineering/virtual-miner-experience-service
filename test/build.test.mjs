@@ -22,7 +22,9 @@ test('static web build materializes a deployable self-contained asset tree and h
  try {
   await writeFile(join(dir,'site.json'),JSON.stringify(config));
   const {files}=await build({configPath:join(dir,'site.json'),outPath:join(dir,'dist')});
-  assert.equal(files.length,7);
+  assert.equal(files.length,9);
+  assert.ok(files.includes('assets/contract-experience.mjs'));
+  assert.ok(files.includes('assets/contract-browser.mjs'));
   const html=await readFile(join(dir,'dist/index.html'),'utf8');
   const status=JSON.parse(await readFile(join(dir,'dist/api/status.json'),'utf8'));
   assert.match(html,/Yet Another Bitcoin Cloud Miner/);
@@ -33,4 +35,17 @@ test('static web build materializes a deployable self-contained asset tree and h
   assert.match(headers,/script-src 'self'/);
   assert.match(headers,/connect-src 'none'/);
  } finally { await rm(dir,{recursive:true,force:true}); }
+});
+
+test('customer-owned time-limited contracts render and cannot smuggle BTC entitlements',()=>{
+ const plans=[{id:'free',label:'Claim a free 8-hour demo',source:'demo',
+  durationSeconds:28800,ratePointsPerSecond:1,maxClaimsPerUtcDay:3,
+  minGapSeconds:0,nonOverlapping:true}];
+ const html=renderHtml({...config,simulationPlans:plans});
+ assert.match(html,/data-demo-plan-id="free"/);
+ assert.match(html,/id="contract-list"/);
+ assert.match(html,/id="plan-definitions"/);
+ assert.match(html,/demo points\/sec/);
+ assert.doesNotMatch(html,/paid \(active\)/);
+ assert.throws(()=>validateConfig({...config,simulationPlans:[{...plans[0],rewardSats:'50'}]}),/cannot promise/);
 });
