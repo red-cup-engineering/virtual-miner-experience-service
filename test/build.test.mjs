@@ -45,6 +45,10 @@ test('customer-owned time-limited contracts render and cannot smuggle BTC entitl
  assert.match(html,/data-demo-plan-id="free"/);
  assert.match(html,/id="contract-list"/);
  assert.match(html,/id="plan-definitions"/);
+ assert.match(html,/id="arcade-mode"/);
+ assert.match(html,/separate pretend balance/);
+ assert.ok(html.indexOf('id="contract-heading"') < html.indexOf('id="arcade-mode"'));
+ assert.match(html,/independent from your eight-hour and daily contracts/);
  assert.match(html,/demo points\/sec/);
  assert.doesNotMatch(html,/paid \(active\)/);
  assert.throws(()=>validateConfig({...config,simulationPlans:[{...plans[0],rewardSats:'50'}]}),/cannot promise/);
