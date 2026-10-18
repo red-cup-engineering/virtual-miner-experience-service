@@ -1,7 +1,7 @@
 import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
 
 const $ = (id) => document.getElementById(id);
-const storageKey = 'yabcm:local-demo:v1';
+const storageKey = 'virtual-miner:local-demo:v1';
 const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 function read() {
   try {
