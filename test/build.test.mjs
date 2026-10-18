@@ -22,7 +22,8 @@ test('static web build materializes a deployable self-contained asset tree and h
  try {
   await writeFile(join(dir,'site.json'),JSON.stringify(config));
   const {files}=await build({configPath:join(dir,'site.json'),outPath:join(dir,'dist')});
-  assert.equal(files.length,9);
+  assert.equal(files.length,10);
+  assert.ok(files.includes('assets/regtest-catalog-client.mjs'));
   assert.ok(files.includes('assets/contract-experience.mjs'));
   assert.ok(files.includes('assets/contract-browser.mjs'));
   const html=await readFile(join(dir,'dist/index.html'),'utf8');
@@ -33,7 +34,7 @@ test('static web build materializes a deployable self-contained asset tree and h
   assert.equal(status.x402PaymentsEnabled,false);assert.equal(status.playableDemo,true);
   const headers=await readFile(join(dir,'dist/_headers'),'utf8');
   assert.match(headers,/script-src 'self'/);
-  assert.match(headers,/connect-src 'none'/);
+  assert.match(headers,/connect-src 'self'/);
  } finally { await rm(dir,{recursive:true,force:true}); }
 });
 
@@ -46,6 +47,8 @@ test('customer-owned time-limited contracts render and cannot smuggle BTC entitl
  assert.match(html,/id="contract-list"/);
  assert.match(html,/id="plan-definitions"/);
  assert.match(html,/id="arcade-mode"/);
+ assert.match(html,/id="regtest-capacity"/);
+ assert.match(html,/Developer laboratory/);
  assert.match(html,/separate pretend balance/);
  assert.ok(html.indexOf('id="contract-heading"') < html.indexOf('id="arcade-mode"'));
  assert.match(html,/independent from your eight-hour and daily contracts/);
