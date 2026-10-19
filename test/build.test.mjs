@@ -120,6 +120,7 @@ test('original ASSIST app and Public service instance actually drive the built s
   const headers=await readFile(join(dir,'dist/_headers'),'utf8');
   assert.match(headers,/script-src 'self'/);
   assert.match(headers,/connect-src 'self'/);
+  assert.match(headers,/\/api\/application\.jsonld[\s\S]*Content-Type: application\/ld\+json; charset=utf-8/);
  } finally { await rm(dir,{recursive:true,force:true}); }
 });
 
