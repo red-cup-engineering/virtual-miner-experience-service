@@ -1,11 +1,73 @@
 #!/usr/bin/env node
 /** One reusable publisher: consumer chooses its name, offers and domain. */
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
-import { join, dirname, resolve } from 'node:path';
+import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { join, dirname, resolve, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { admitSimulationPlans } from '../src/contract-experience.mjs';
+import { projectAssistPublicServiceInstance } from '@red-cup-engineering/assist/public-service-instance';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+const gitBlobSha = /^[a-f0-9]{40}$/u;
+/** Read exactly one original selected Git source, without following symlinks. */
+async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository, allowedPath}) {
+  if (typeof selectedRoot !== 'string' || !isAbsolute(selectedRoot) ||
+      !spec || Object.keys(spec).sort().join('|') !== 'gitBlobSha|recordPath|repository' ||
+      spec.repository !== expectedRepository ||
+      typeof spec.recordPath !== 'string' || !allowedPath.test(spec.recordPath) ||
+      !gitBlobSha.test(spec.gitBlobSha ?? '')) {
+    throw new TypeError('virtual miner needs the exact original repository, typed path and pinned Git blob');
+  }
+  const base = await realpath(selectedRoot);
+  const target = resolve(base, spec.recordPath);
+  if (!target.startsWith(base + sep) || await realpath(target) !== target) {
+    throw new TypeError('virtual miner rejects redirected original source paths');
+  }
+  const stat = await lstat(target);
+  if (!stat.isFile() || stat.size < 1 || stat.size > 1_048_576) {
+    throw new TypeError('virtual miner source must be one bounded regular file');
+  }
+  const bytes = await readFile(target);
+  const observed = createHash('sha1').update('blob ' + bytes.length + '\0')
+    .update(bytes).digest('hex');
+  if (observed !== spec.gitBlobSha) {
+    throw new TypeError('virtual miner source does not match the selected Git blob');
+  }
+  return Object.freeze({
+    document: JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes)),
+    sourceDigest: 'ni:///sha-256;' + createHash('sha256').update(bytes).digest('base64url'),
+    source: Object.freeze({...spec}),
+  });
+}
+
+/**
+ * Original Web Game Engineering effect ceiling. Source may truthfully declare
+ * what is absent, but cannot create a payment, sponsor SDK, wallet or sats
+ * settlement merely by claiming its operation is ready.
+ */
+function admitVirtualMinerOperationalCeiling(operations) {
+  const allowed = new Map([
+    ['play-local-mining-demo', ['local-browser-simulation','source-implemented','not-independently-observed']],
+    ['visit-first-party-house-offers', ['external-navigation','source-implemented','not-independently-observed']],
+    ['upgrade-virtual-rig', ['nonredeemable-points-exchange','source-implemented','not-independently-observed']],
+    ['watch-ad-for-sats', ['advertiser-funded-reward','not-implemented','disabled']],
+    ['purchase-agent-service-x402', ['paid-api-purchase','not-implemented','disabled']],
+  ]);
+  if (!Array.isArray(operations) || operations.length !== allowed.size) {
+    throw new TypeError('virtual miner needs exactly its five declared, financially inert operations');
+  }
+  for (const op of operations) {
+    const required = allowed.get(op.operationId);
+    if (!required || [op.interactionClass,op.sourceCapability,op.publicAvailability]
+      .some((value,i)=>value!==required[i])) {
+      throw new TypeError('virtual miner cannot invent or enable operation: '+op.operationId);
+    }
+    allowed.delete(op.operationId);
+  }
+  if (allowed.size) throw new TypeError('virtual miner needs every explicitly disabled monetary operation');
+}
+
 const esc = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
 function validText(value, name) {
   if (typeof value !== 'string' || !value.trim() || value.length > 240) throw new TypeError(`${name} must be nonempty short text`);
@@ -35,7 +97,7 @@ export function validateConfig(config) {
   if (config.simulationPlans !== undefined) admitSimulationPlans(config.simulationPlans);
   return config;
 }
-export function renderHtml(config) {
+export function renderHtml(config, serviceProjection = null) {
   validateConfig(config);
   const cards = config.promotions.map(p => `<article class="promo"><span class="small-label">From 561 Group · No reward</span><h3>${esc(p.label)}</h3><p>${esc(p.description)}</p><a rel="noopener noreferrer" href="${esc(p.href)}">Explore ${esc(p.label)} →</a></article>`).join('\n');
 
@@ -57,6 +119,17 @@ export function renderHtml(config) {
     '<div hidden id="plan-definitions" data-plans="' + esc(JSON.stringify(plans)) + '"></div>' +
     '<p class="fine muted">UTC claim limits and expiry are enforced locally for play; reload keeps your progress on this device. Browser storage is not trusted money accounting.</p>' +
     '</section>' : '';
+  const serviceSection = !serviceProjection ? '' :
+    '<section class="panel widepanel" aria-labelledby="service-capabilities">' +
+    '<div class="small-label">ASSIST service truth · source-built, public receipt unverified</div>' +
+    '<h2 id="service-capabilities">What this game can and cannot do</h2>' +
+    '<p>Browser-only play and house navigation are source-implemented. Real sats, sponsored ads and agent-paid purchases are disabled.</p>' +
+    '<ul>' + serviceProjection.declaredOperations.map(op =>
+      '<li><strong>' + esc(op.operationId.replaceAll('-', ' ')) + '</strong> — ' +
+      esc(op.customerMeaning) + ' (' + esc(op.sourceCapability) + ', ' +
+      esc(op.publicAvailability) + ')</li>').join('') + '</ul>' +
+    '<p><a href="/api/status.json">Source-qualified operations</a> · ' +
+    '<a href="/api/application.jsonld">SoftwareApplication JSON-LD</a></p></section>';
   const regtestSection = '<details class="panel widepanel" id="regtest-lab">' +
     '<summary class="arcade-summary">Developer laboratory · read-only regtest availability</summary>' +
     '<p id="regtest-capacity" role="status" aria-live="polite">' +
@@ -81,18 +154,54 @@ ${regtestSection}
 <section class="panel" aria-labelledby="workshop-heading"><h2 id="workshop-heading">Rig workshop</h2><div class="group"><div class="small-label">Spend play points only</div><button id="upgrade" class="secondary">Upgrade virtual miner</button><small>No real purchase; unlock a bigger imaginary hash rate.</small></div><div class="group"><button id="boost" class="secondary">2× boost</button><small>Boosts apply to demo points, not Bitcoin or cash.</small></div><div class="group"><span class="small-label">Real reward lane</span><button disabled aria-disabled="true">Watch ad → real sats (not available)</button><small>Will require an approved ad supplier, financial reserve and verified payout before activation. Our own house promotions never pay sats.</small></div><div class="group"><span class="small-label">Total pretend points produced</span><strong id="all-time">0</strong><button id="reset" class="tertiary">Reset my local demo</button></div></section>
 </div></details>
 <section class="panel widepanel" aria-labelledby="discover-heading"><div class="small-label">House promotions · Zero reward</div><h2 id="discover-heading">While your virtual rig hums…</h2><p>These are genuine links to other 561 Group properties. Visiting them earns no sats, points, or mining income.</p><div class="promos">${cards}</div></section>
+${serviceSection}
 <section class="panel widepanel" aria-labelledby="about-heading"><h2 id="about-heading">What is this, really?</h2><p>A working, self-contained demo of a small attention product: a simulated timer, free upgrades, a boost, and places to explore next. The next commercial step is a supplier-approved <em>real</em> ad reward backed by actual cash—not fake mining, user deposits, or player-to-player payments.</p><p><a href="/api/status.json">Machine-readable product status</a> · <a href="https://market.561.group/">Explore agent services on the 561 Market</a></p></section></div>
 </main><footer class="footer">${esc(config.brand)} is an independent 561 Group simulation. No miners, BTC, NFTs, ad impressions or crypto rewards are sold or credited. All state stays in this browser and can be reset.<br>Made for humans first; an ASSIST app instance is planned. No tracking, accounts or payment processing in this release.</footer>
 <noscript>Enable JavaScript to run the local-only demo. No real Bitcoin can be earned here.</noscript>
 </div><script type="module" src="/assets/browser.mjs"></script></body></html>\n`;
 }
-export async function build({configPath, outPath}) {
-  if (!configPath || !outPath) throw new Error('--config and --out required');
-  const config = validateConfig(JSON.parse(await readFile(resolve(configPath), 'utf8')));
+export async function build({configPath, outPath, assistRoot, publicRoot}) {
+  if (!configPath || !outPath || !assistRoot || !publicRoot) {
+    throw new Error('--config, --out, --assist-root and --public-root required');
+  }
+  const site = JSON.parse(await readFile(resolve(configPath), 'utf8'));
+  if (!site || site.kind !== 'virtual-miner-public-site/v1' || site.mode !== 'demo' ||
+      Object.hasOwn(site,'brand') || Object.hasOwn(site,'host') ||
+      Object.hasOwn(site,'description') ||
+      typeof site.marketingDescription !== 'string') {
+    throw new TypeError('site must select the original ASSIST identity; shadow brand/host/description refused');
+  }
+  const app = await readPinnedOriginal({
+    root:assistRoot, spec:site.rosterSource,
+    expectedRepository:'red-cup-engineering/assist',
+    allowedPath:/^data\/records\/assist-apps\/[a-z0-9-]+\.json$/u,
+  });
+  const owner = app.document?.owner;
+  if (!owner || typeof owner.repository !== 'string' ||
+      typeof owner.path !== 'string' || typeof app.document.id !== 'string' ||
+      site.rosterSource.recordPath !== 'data/records/assist-apps/' + app.document.id + '.json' ||
+      site.serviceInstanceSource?.repository !== owner.repository ||
+      site.serviceInstanceSource?.recordPath !== owner.path + '/assist-instance.json') {
+    throw new TypeError('site must select its real ASSIST app and that product owner, not a parallel record');
+  }
+  const instance = await readPinnedOriginal({
+    root:publicRoot, spec:site.serviceInstanceSource,
+    expectedRepository:owner.repository,
+    allowedPath:/^services\/(?:[a-z0-9.-]+\/)*sites\/[a-z0-9-]+\.assist\.561\.group\/assist-instance\.json$/u,
+  });
+  const serviceProjection = projectAssistPublicServiceInstance({
+    app:app.document, instance:instance.document,
+    rosterDigest:app.sourceDigest, instanceDigest:instance.sourceDigest,
+  });
+  admitVirtualMinerOperationalCeiling(serviceProjection.declaredOperations);
+  const config = validateConfig({
+    ...site, brand:serviceProjection.identity.name, host:serviceProjection.identity.host,
+    description:site.marketingDescription,
+  });
   const dest = resolve(outPath);
   await mkdir(join(dest, 'assets'), {recursive:true});
   await mkdir(join(dest, 'api'), {recursive:true});
-  await writeFile(join(dest, 'index.html'), renderHtml(config));
+  await writeFile(join(dest, 'index.html'), renderHtml(config, serviceProjection));
   for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/contract-experience.mjs','assets/contract-experience.mjs'], ['src/contract-browser.mjs','assets/contract-browser.mjs'], ['src/regtest-catalog-client.mjs','assets/regtest-catalog-client.mjs'], ['src/style.css','assets/style.css']])
     await copyFile(join(root, from), join(dest, to));
   await writeFile(join(dest, 'api/status.json'), JSON.stringify({
@@ -101,15 +210,25 @@ export async function build({configPath, outPath}) {
     realRewardsEnabled:false, sponsorCallbacksEnabled:false, externalAdsEnabled:false,
     walletOrCustodyEnabled:false, x402PaymentsEnabled:false, playerDepositsAccepted:false,
     playableDemo:true, storage:'local-browser-only',
+    // Source code, installed site and independent visitor receiving differ.
+    publicReceiving:serviceProjection.publicReceiving,
+    sourceLifecycle:serviceProjection.sourceLifecycle,
+    authoritativeApp:serviceProjection.identity,
+    originalSources:serviceProjection.source,
+    declaredOperations:serviceProjection.declaredOperations,
     nextMilestones:['provider-permitted-paid-ad', 'financially-funded-sats-rewards', 'signed-postback-and-reversal', 'independent-public-receiving'],
   }, null, 2) + '\n');
-  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
+  await writeFile(join(dest, 'api/application.jsonld'),
+    JSON.stringify(serviceProjection.linkedData, null, 2) + '\n');
+  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n\n/api/application.jsonld\n  Content-Type: application/ld+json; charset=utf-8\n`);
   await writeFile(join(dest, 'robots.txt'), 'User-agent: *\nAllow: /\n');
-  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
+  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','api/application.jsonld','_headers','robots.txt']};
 }
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const args = process.argv.slice(2);
   const option = key => { const index = args.indexOf(key); return index >= 0 ? args[index+1] : undefined; };
-  build({ configPath:option('--config'), outPath:option('--out') }).then(result => console.log(JSON.stringify(result)), error => { console.error(error.message);process.exitCode=1; });
+  build({ configPath:option('--config'), outPath:option('--out'),
+    assistRoot:option('--assist-root'), publicRoot:option('--public-root') })
+    .then(result => console.log(JSON.stringify(result)), error => { console.error(error.message);process.exitCode=1; });
 }

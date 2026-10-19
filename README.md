@@ -1,8 +1,8 @@
 # Virtual Miner Experience Service
 
-Red Cup Web Game Engineering owns this reusable, zero-custody, dependency-free static site fabricator and pure virtual-credit simulator. It is **not** a Bitcoin miner, sat issuer, rewarded-ad integration, ASSIST payment implementation, or an independent ad server.
+Red Cup Web Game Engineering owns this reusable, zero-custody static site fabricator with ASSIST's original instance admission dependency and pure virtual-credit simulator. It is **not** a Bitcoin miner, sat issuer, rewarded-ad integration, ASSIST payment implementation, or an independent ad server.
 
-The first real consumer is Causeway Public Agent Services, branded **Yet Another Bitcoin Cloud Miner** (planned `yabcm.assist.561.group`). That owner defines the name, first-party house promotions, hostname, configuration, and receiving. No app brand or customer traffic source is embedded in the reusable generator.
+The first real consumer is Causeway Public Agent Services, branded **Yet Another Bitcoin Cloud Miner** (planned `yabcm.assist.561.group`). That owning Public office selects the original ASSIST roster for the name and hostname, and separately owns source-qualified capabilities, first-party house promotions, game terms, and independent receiving. No app brand or customer traffic source is embedded in the reusable generator.
 
 ## Build and test
 
@@ -10,7 +10,7 @@ Run from this package directory with Node >= 22:
 
 ```sh
 npm test
-node scripts/build.mjs --config /path/to/causeway/sites/yabcm.assist.561.group/site.json --out /path/to/causeway/sites/yabcm.assist.561.group/dist
+node scripts/build.mjs --config /absolute/path/to/public-services-section/services/public-agent-services-section/sites/yabcm.assist.561.group/site.json --assist-root /absolute/path/to/red-cup-engineering/assist --public-root /absolute/path/to/causeway-services/public-services-section --out /absolute/path/to/yabcm.assist.561.group/dist
 ```
 
 Serve `dist/` on an HTTP static server to test. Cloudflare Workers Static Assets can publish that same directory using the **Causeway-owned** `wrangler.jsonc` configuration. The Public site owner must independently confirm Cloudflare route/DNS authority, Worker name, no conflict with the existing ASSIST host, installed CLI/account credentials and public HTTP receiving before claiming the address is live. A source-only build is not deployment.
@@ -50,3 +50,48 @@ The authoritative [Red Cup Finance regtest service](https://github.com/red-cup-e
 Tests: [read-only catalog contract](test/regtest-catalog-client.test.mjs), [compiled asset and CSP](test/build.test.mjs), and [original game interactions](test/browser.test.mjs). The build's CSP now permits **same-origin GETs only** (`connect-src 'self'`) without admitting arbitrary ad scripts or cross-origin callbacks. The real rewarded-ad and paid-miner controls remain disabled until independent rights and financial receiving.
 
 This adds a **runnable local finance/UX integration** rather than a second mining economy. It is not a mainnet product or installed remote Cloudflare release.
+
+## Original ASSIST source, typed operations, and actual public build
+
+The former `assist-instance.json` was an unconsumed declaration of mixed
+`operation/effect/status` fields. The Public instance is now
+`AssistPublicServiceInstance` v2, with separately declared `operationId`,
+`interactionClass`, `sourceCapability` and `publicAvailability`, validated
+by the original `@red-cup-engineering/assist@0.6.4`
+`./public-service-instance` reader and its JSON Schema 2020-12 contract.
+
+The actual site `site.json` is presentation parameterization, not another
+identity registry. It selects **two exact original Git blob identities**:
+ASSIST's app roster (brand, hostname, summary and engine custody) and
+Causeway Public Services' service instance (per-operation capability,
+external receiving state and constraints). The existing `scripts/build.mjs`
+requires both source checkout roots, reads their actual files without
+following symlinks, checks the Git blobs, admits their semantic relationship
+through the original ASSIST schema and refuses source drift or mismatched
+product/host. A caller-supplied site brand or host is rejected.
+
+The game engine's independently implemented source ceiling is deliberately
+stricter than the source owner's vocabulary: the public manifest **cannot**
+enable paid advertising, real sats, wallets or x402 payments by changing
+JSON. Only local simulation, imaginary upgrades and unpaid house links may
+be source-implemented; the other two monetary operations must be explicitly
+disabled and not implemented.
+
+The same original build now produces eleven assets: existing game/browser
+modules and `index.html` with source-authored capability descriptions;
+`/api/status.json` with both exact NI source content digests and every
+qualified operation; and standard
+[schema.org SoftwareApplication](https://schema.org/SoftwareApplication)
+`/api/application.jsonld` with DCMI and PROV-O source relationships,
+offered via the same Cloudflare static asset handler with
+`application/ld+json` MIME. Only implemented **source** capabilities enter
+the linked-data feature list; the metadata explicitly says public hosting
+and financial receiving are unverified.
+
+This adds no second game, transaction ledger, ad callback service, query
+engine, personal account, payment runtime or independently hosted Actor.
+Candidate ASSIST 0.6.4 must be published/selected into the real package
+environment, and native source tests and actual site build must pass before
+a production release. Authoring the changes does not establish that
+Cloudflare DNS, a public browser journey, a payment or a beneficiary has
+received them.
