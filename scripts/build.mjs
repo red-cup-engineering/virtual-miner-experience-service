@@ -160,13 +160,48 @@ ${serviceSection}
 <noscript>Enable JavaScript to run the local-only demo. No real Bitcoin can be earned here.</noscript>
 </div><script type="module" src="/assets/browser.mjs"></script></body></html>\n`;
 }
-export async function build({configPath, outPath}) {
-  if (!configPath || !outPath) throw new Error('--config and --out required');
-  const config = validateConfig(JSON.parse(await readFile(resolve(configPath), 'utf8')));
+export async function build({configPath, outPath, assistRoot, publicRoot}) {
+  if (!configPath || !outPath || !assistRoot || !publicRoot) {
+    throw new Error('--config, --out, --assist-root and --public-root required');
+  }
+  const site = JSON.parse(await readFile(resolve(configPath), 'utf8'));
+  if (!site || site.kind !== 'virtual-miner-public-site/v1' || site.mode !== 'demo' ||
+      Object.hasOwn(site,'brand') || Object.hasOwn(site,'host') ||
+      Object.hasOwn(site,'description') ||
+      typeof site.marketingDescription !== 'string') {
+    throw new TypeError('site must select the original ASSIST identity; shadow brand/host/description refused');
+  }
+  const app = await readPinnedOriginal({
+    root:assistRoot, spec:site.rosterSource,
+    expectedRepository:'red-cup-engineering/assist',
+    allowedPath:/^data\/records\/assist-apps\/[a-z0-9-]+\.json$/u,
+  });
+  const owner = app.document?.owner;
+  if (!owner || typeof owner.repository !== 'string' ||
+      typeof owner.path !== 'string' || typeof app.document.id !== 'string' ||
+      site.rosterSource.recordPath !== 'data/records/assist-apps/' + app.document.id + '.json' ||
+      site.serviceInstanceSource?.repository !== owner.repository ||
+      site.serviceInstanceSource?.recordPath !== owner.path + '/assist-instance.json') {
+    throw new TypeError('site must select its real ASSIST app and that product owner, not a parallel record');
+  }
+  const instance = await readPinnedOriginal({
+    root:publicRoot, spec:site.serviceInstanceSource,
+    expectedRepository:owner.repository,
+    allowedPath:/^services\/(?:[a-z0-9.-]+\/)*sites\/[a-z0-9-]+\.assist\.561\.group\/assist-instance\.json$/u,
+  });
+  const serviceProjection = projectAssistPublicServiceInstance({
+    app:app.document, instance:instance.document,
+    rosterDigest:app.sourceDigest, instanceDigest:instance.sourceDigest,
+  });
+  admitVirtualMinerOperationalCeiling(serviceProjection.declaredOperations);
+  const config = validateConfig({
+    ...site, brand:serviceProjection.identity.name, host:serviceProjection.identity.host,
+    description:site.marketingDescription,
+  });
   const dest = resolve(outPath);
   await mkdir(join(dest, 'assets'), {recursive:true});
   await mkdir(join(dest, 'api'), {recursive:true});
-  await writeFile(join(dest, 'index.html'), renderHtml(config));
+  await writeFile(join(dest, 'index.html'), renderHtml(config, serviceProjection));
   for (const [from, to] of [['src/browser.mjs','assets/browser.mjs'], ['src/model.mjs','assets/model.mjs'], ['src/contract-experience.mjs','assets/contract-experience.mjs'], ['src/contract-browser.mjs','assets/contract-browser.mjs'], ['src/regtest-catalog-client.mjs','assets/regtest-catalog-client.mjs'], ['src/style.css','assets/style.css']])
     await copyFile(join(root, from), join(dest, to));
   await writeFile(join(dest, 'api/status.json'), JSON.stringify({
@@ -175,15 +210,25 @@ export async function build({configPath, outPath}) {
     realRewardsEnabled:false, sponsorCallbacksEnabled:false, externalAdsEnabled:false,
     walletOrCustodyEnabled:false, x402PaymentsEnabled:false, playerDepositsAccepted:false,
     playableDemo:true, storage:'local-browser-only',
+    // Source code, installed site and independent visitor receiving differ.
+    publicReceiving:serviceProjection.publicReceiving,
+    sourceLifecycle:serviceProjection.sourceLifecycle,
+    authoritativeApp:serviceProjection.identity,
+    originalSources:serviceProjection.source,
+    declaredOperations:serviceProjection.declaredOperations,
     nextMilestones:['provider-permitted-paid-ad', 'financially-funded-sats-rewards', 'signed-postback-and-reversal', 'independent-public-receiving'],
   }, null, 2) + '\n');
+  await writeFile(join(dest, 'api/application.jsonld'),
+    JSON.stringify(serviceProjection.linkedData, null, 2) + '\n');
   await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
   await writeFile(join(dest, 'robots.txt'), 'User-agent: *\nAllow: /\n');
-  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','_headers','robots.txt']};
+  return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','api/application.jsonld','_headers','robots.txt']};
 }
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const args = process.argv.slice(2);
   const option = key => { const index = args.indexOf(key); return index >= 0 ? args[index+1] : undefined; };
-  build({ configPath:option('--config'), outPath:option('--out') }).then(result => console.log(JSON.stringify(result)), error => { console.error(error.message);process.exitCode=1; });
+  build({ configPath:option('--config'), outPath:option('--out'),
+    assistRoot:option('--assist-root'), publicRoot:option('--public-root') })
+    .then(result => console.log(JSON.stringify(result)), error => { console.error(error.message);process.exitCode=1; });
 }
