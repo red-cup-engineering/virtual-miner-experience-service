@@ -1,11 +1,73 @@
 #!/usr/bin/env node
 /** One reusable publisher: consumer chooses its name, offers and domain. */
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
-import { join, dirname, resolve } from 'node:path';
+import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { join, dirname, resolve, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { admitSimulationPlans } from '../src/contract-experience.mjs';
+import { projectAssistPublicServiceInstance } from '@red-cup-engineering/assist/public-service-instance';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+const gitBlobSha = /^[a-f0-9]{40}$/u;
+/** Read exactly one original selected Git source, without following symlinks. */
+async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository, allowedPath}) {
+  if (typeof selectedRoot !== 'string' || !isAbsolute(selectedRoot) ||
+      !spec || Object.keys(spec).sort().join('|') !== 'gitBlobSha|recordPath|repository' ||
+      spec.repository !== expectedRepository ||
+      typeof spec.recordPath !== 'string' || !allowedPath.test(spec.recordPath) ||
+      !gitBlobSha.test(spec.gitBlobSha ?? '')) {
+    throw new TypeError('virtual miner needs the exact original repository, typed path and pinned Git blob');
+  }
+  const base = await realpath(selectedRoot);
+  const target = resolve(base, spec.recordPath);
+  if (!target.startsWith(base + sep) || await realpath(target) !== target) {
+    throw new TypeError('virtual miner rejects redirected original source paths');
+  }
+  const stat = await lstat(target);
+  if (!stat.isFile() || stat.size < 1 || stat.size > 1_048_576) {
+    throw new TypeError('virtual miner source must be one bounded regular file');
+  }
+  const bytes = await readFile(target);
+  const observed = createHash('sha1').update('blob ' + bytes.length + '\0')
+    .update(bytes).digest('hex');
+  if (observed !== spec.gitBlobSha) {
+    throw new TypeError('virtual miner source does not match the selected Git blob');
+  }
+  return Object.freeze({
+    document: JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes)),
+    sourceDigest: 'ni:///sha-256;' + createHash('sha256').update(bytes).digest('base64url'),
+    source: Object.freeze({...spec}),
+  });
+}
+
+/**
+ * Original Web Game Engineering effect ceiling. Source may truthfully declare
+ * what is absent, but cannot create a payment, sponsor SDK, wallet or sats
+ * settlement merely by claiming its operation is ready.
+ */
+function admitVirtualMinerOperationalCeiling(operations) {
+  const allowed = new Map([
+    ['play-local-mining-demo', ['local-browser-simulation','source-implemented','not-independently-observed']],
+    ['visit-first-party-house-offers', ['external-navigation','source-implemented','not-independently-observed']],
+    ['upgrade-virtual-rig', ['nonredeemable-points-exchange','source-implemented','not-independently-observed']],
+    ['watch-ad-for-sats', ['advertiser-funded-reward','not-implemented','disabled']],
+    ['purchase-agent-service-x402', ['paid-api-purchase','not-implemented','disabled']],
+  ]);
+  if (!Array.isArray(operations) || operations.length !== allowed.size) {
+    throw new TypeError('virtual miner needs exactly its five declared, financially inert operations');
+  }
+  for (const op of operations) {
+    const required = allowed.get(op.operationId);
+    if (!required || [op.interactionClass,op.sourceCapability,op.publicAvailability]
+      .some((value,i)=>value!==required[i])) {
+      throw new TypeError('virtual miner cannot invent or enable operation: '+op.operationId);
+    }
+    allowed.delete(op.operationId);
+  }
+  if (allowed.size) throw new TypeError('virtual miner needs every explicitly disabled monetary operation');
+}
+
 const esc = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
 function validText(value, name) {
   if (typeof value !== 'string' || !value.trim() || value.length > 240) throw new TypeError(`${name} must be nonempty short text`);
