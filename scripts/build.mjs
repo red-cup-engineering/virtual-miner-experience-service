@@ -220,7 +220,7 @@ export async function build({configPath, outPath, assistRoot, publicRoot}) {
   }, null, 2) + '\n');
   await writeFile(join(dest, 'api/application.jsonld'),
     JSON.stringify(serviceProjection.linkedData, null, 2) + '\n');
-  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n`);
+  await writeFile(join(dest, '_headers'), `/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()\n  Strict-Transport-Security: max-age=31536000; includeSubDomains\n\n/api/application.jsonld\n  Content-Type: application/ld+json; charset=utf-8\n`);
   await writeFile(join(dest, 'robots.txt'), 'User-agent: *\nAllow: /\n');
   return {dest, files:['index.html','assets/browser.mjs','assets/model.mjs','assets/contract-experience.mjs','assets/contract-browser.mjs','assets/regtest-catalog-client.mjs','assets/style.css','api/status.json','api/application.jsonld','_headers','robots.txt']};
 }
