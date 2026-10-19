@@ -97,7 +97,7 @@ export function validateConfig(config) {
   if (config.simulationPlans !== undefined) admitSimulationPlans(config.simulationPlans);
   return config;
 }
-export function renderHtml(config) {
+export function renderHtml(config, serviceProjection = null) {
   validateConfig(config);
   const cards = config.promotions.map(p => `<article class="promo"><span class="small-label">From 561 Group · No reward</span><h3>${esc(p.label)}</h3><p>${esc(p.description)}</p><a rel="noopener noreferrer" href="${esc(p.href)}">Explore ${esc(p.label)} →</a></article>`).join('\n');
 
@@ -119,6 +119,17 @@ export function renderHtml(config) {
     '<div hidden id="plan-definitions" data-plans="' + esc(JSON.stringify(plans)) + '"></div>' +
     '<p class="fine muted">UTC claim limits and expiry are enforced locally for play; reload keeps your progress on this device. Browser storage is not trusted money accounting.</p>' +
     '</section>' : '';
+  const serviceSection = !serviceProjection ? '' :
+    '<section class="panel widepanel" aria-labelledby="service-capabilities">' +
+    '<div class="small-label">ASSIST service truth · source-built, public receipt unverified</div>' +
+    '<h2 id="service-capabilities">What this game can and cannot do</h2>' +
+    '<p>Browser-only play and house navigation are source-implemented. Real sats, sponsored ads and agent-paid purchases are disabled.</p>' +
+    '<ul>' + serviceProjection.declaredOperations.map(op =>
+      '<li><strong>' + esc(op.operationId.replaceAll('-', ' ')) + '</strong> — ' +
+      esc(op.customerMeaning) + ' (' + esc(op.sourceCapability) + ', ' +
+      esc(op.publicAvailability) + ')</li>').join('') + '</ul>' +
+    '<p><a href="/api/status.json">Source-qualified operations</a> · ' +
+    '<a href="/api/application.jsonld">SoftwareApplication JSON-LD</a></p></section>';
   const regtestSection = '<details class="panel widepanel" id="regtest-lab">' +
     '<summary class="arcade-summary">Developer laboratory · read-only regtest availability</summary>' +
     '<p id="regtest-capacity" role="status" aria-live="polite">' +
@@ -143,6 +154,7 @@ ${regtestSection}
 <section class="panel" aria-labelledby="workshop-heading"><h2 id="workshop-heading">Rig workshop</h2><div class="group"><div class="small-label">Spend play points only</div><button id="upgrade" class="secondary">Upgrade virtual miner</button><small>No real purchase; unlock a bigger imaginary hash rate.</small></div><div class="group"><button id="boost" class="secondary">2× boost</button><small>Boosts apply to demo points, not Bitcoin or cash.</small></div><div class="group"><span class="small-label">Real reward lane</span><button disabled aria-disabled="true">Watch ad → real sats (not available)</button><small>Will require an approved ad supplier, financial reserve and verified payout before activation. Our own house promotions never pay sats.</small></div><div class="group"><span class="small-label">Total pretend points produced</span><strong id="all-time">0</strong><button id="reset" class="tertiary">Reset my local demo</button></div></section>
 </div></details>
 <section class="panel widepanel" aria-labelledby="discover-heading"><div class="small-label">House promotions · Zero reward</div><h2 id="discover-heading">While your virtual rig hums…</h2><p>These are genuine links to other 561 Group properties. Visiting them earns no sats, points, or mining income.</p><div class="promos">${cards}</div></section>
+${serviceSection}
 <section class="panel widepanel" aria-labelledby="about-heading"><h2 id="about-heading">What is this, really?</h2><p>A working, self-contained demo of a small attention product: a simulated timer, free upgrades, a boost, and places to explore next. The next commercial step is a supplier-approved <em>real</em> ad reward backed by actual cash—not fake mining, user deposits, or player-to-player payments.</p><p><a href="/api/status.json">Machine-readable product status</a> · <a href="https://market.561.group/">Explore agent services on the 561 Market</a></p></section></div>
 </main><footer class="footer">${esc(config.brand)} is an independent 561 Group simulation. No miners, BTC, NFTs, ad impressions or crypto rewards are sold or credited. All state stays in this browser and can be reset.<br>Made for humans first; an ASSIST app instance is planned. No tracking, accounts or payment processing in this release.</footer>
 <noscript>Enable JavaScript to run the local-only demo. No real Bitcoin can be earned here.</noscript>
