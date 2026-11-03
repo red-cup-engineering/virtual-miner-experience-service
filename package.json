@@ -15,6 +15,9 @@
     "type": "git",
     "url": "git+https://github.com/red-cup-engineering/virtual-miner-experience-service.git"
   },
+  "dependencies": {
+    "@red-cup-engineering/assist": "0.6.4"
+  },
   "license": "MIT",
   "funding": {
     "type": "individual",
