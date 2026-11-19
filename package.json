@@ -1,0 +1,25 @@
+{
+  "name": "@red-cup-engineering/virtual-miner-experience-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable and truthful virtual miner demo: reusable Engineering code, customer-configured Causeway site.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/virtual-miner-experience-service.git"
+  },
+  "dependencies": {
+    "@red-cup-engineering/assist": "^0.9.0"
+  },
+  "license": "MIT",
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  }
+}
