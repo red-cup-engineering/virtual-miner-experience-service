@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/p
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateSimulationPlans } from '../src/contract-experience.mjs';
+import { admitSimulationPlans } from '../src/contract-experience.mjs';
 import { projectAssistPublicServiceInstance } from '@red-cup-engineering/assist/public-service-instance';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,7 +46,7 @@ async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository,
  * what is absent, but cannot create a payment, sponsor SDK, wallet or sats
  * settlement merely by claiming its operation is ready.
  */
-function validateVirtualMinerOperationalCeiling(operations) {
+function admitVirtualMinerOperationalCeiling(operations) {
   const allowed = new Map([
     ['play-local-mining-demo', ['local-browser-simulation','source-implemented','not-independently-observed']],
     ['visit-first-party-house-offers', ['external-navigation','source-implemented','not-independently-observed']],
@@ -94,7 +94,7 @@ export function validateConfig(config) {
       !(url.hostname === 'koios.news' || url.hostname === '561.group' || url.hostname.endsWith('.561.group')))
       throw new TypeError('demo house promotion URL must be a verified HTTPS 561 public property');
   }
-  if (config.simulationPlans !== undefined) validateSimulationPlans(config.simulationPlans);
+  if (config.simulationPlans !== undefined) admitSimulationPlans(config.simulationPlans);
   return config;
 }
 export function renderHtml(config, serviceProjection = null) {
@@ -193,7 +193,7 @@ export async function build({configPath, outPath, assistRoot, publicRoot}) {
     app:app.document, instance:instance.document,
     rosterDigest:app.sourceDigest, instanceDigest:instance.sourceDigest,
   });
-  validateVirtualMinerOperationalCeiling(serviceProjection.declaredOperations);
+  admitVirtualMinerOperationalCeiling(serviceProjection.declaredOperations);
   const config = validateConfig({
     ...site, brand:serviceProjection.identity.name, host:serviceProjection.identity.host,
     description:site.marketingDescription,

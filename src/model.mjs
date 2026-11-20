@@ -16,7 +16,7 @@ export function newDemo(now) {
   if (!safeInt(now)) throw new TypeError('timestamp must be a nonnegative safe integer');
   return { version: 1, tier: 0, banked: 0, pending: 0, allTime: 0, lastTickMs: now, boostUntilMs: 0 };
 }
-export function validateDemo(candidate) {
+export function admitDemo(candidate) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) ||
     candidate.version !== 1 || !safeInt(candidate.tier) || candidate.tier >= TIERS.length ||
     !['banked', 'pending', 'allTime'].every(key => safeInt(candidate[key]) && candidate[key] <= MAX_DEMO_BALANCE) ||
@@ -28,7 +28,7 @@ export function validateDemo(candidate) {
     allTime: candidate.allTime, lastTickMs: candidate.lastTickMs, boostUntilMs: candidate.boostUntilMs };
 }
 export function advanceDemo(candidate, now) {
-  const state = validateDemo(candidate);
+  const state = admitDemo(candidate);
   if (!safeInt(now)) throw new TypeError('timestamp must be a nonnegative safe integer');
   if (now <= state.lastTickMs) return state;
   const elapsedSeconds = Math.floor(Math.min(now - state.lastTickMs, MAX_OFFLINE_MS) / 1000);
