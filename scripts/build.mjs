@@ -2,7 +2,7 @@
 /** One reusable publisher: consumer chooses its name, offers and domain. */
 import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { join, dirname, resolve, sep, isAbsolute } from 'node:path';
+import { join, dirname, resolve, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { admitSimulationPlans } from '../src/contract-experience.mjs';
 import { projectAssistPublicServiceInstance } from '@red-cup-engineering/assist/public-service-instance';
@@ -11,16 +11,17 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const gitBlobSha = /^[a-f0-9]{40}$/u;
 /** Read exactly one original selected Git source, without following symlinks. */
-async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository, allowedPath}) {
+async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository, allowedPath, checkoutPath = spec?.recordPath}) {
   if (typeof selectedRoot !== 'string' || !isAbsolute(selectedRoot) ||
       !spec || Object.keys(spec).sort().join('|') !== 'gitBlobSha|recordPath|repository' ||
       spec.repository !== expectedRepository ||
       typeof spec.recordPath !== 'string' || !allowedPath.test(spec.recordPath) ||
+      typeof checkoutPath !== 'string' || !allowedPath.test(checkoutPath) ||
       !gitBlobSha.test(spec.gitBlobSha ?? '')) {
     throw new TypeError('virtual miner needs the exact original repository, typed path and pinned Git blob');
   }
   const base = await realpath(selectedRoot);
-  const target = resolve(base, spec.recordPath);
+  const target = resolve(base, checkoutPath);
   if (!target.startsWith(base + sep) || await realpath(target) !== target) {
     throw new TypeError('virtual miner rejects redirected original source paths');
   }
@@ -150,7 +151,7 @@ ${regtestSection}
 <div class="numbers"><output id="pending" aria-label="Unclaimed virtual points">0</output><span>pending demo points</span></div><div class="meter" aria-hidden="true"></div>
 <div class="stats"><div class="stat"><span class="small-label">Demo wallet (not BTC)</span><b id="banked">0</b></div><div class="stat"><span class="small-label">Current animation rate</span><b id="rate">1 point / sec</b></div><div class="stat"><span class="small-label">Virtual rig tier</span><b id="tier">Pocket cloud</b></div><div class="stat"><span class="small-label">Multiplier</span><b id="tier-multiplier">1× base rate</b></div></div>
 <button id="claim" class="wide">Claim pretend points</button><p class="fine muted">Claims only move nonredeemable demo points around on this device. There is no withdrawal or blockchain transfer.</p>
-<p id="feedback" class="feedback" aria-live="polite"></p></section>
+<p id="counter-save-status" role="status" class="fine muted"></p><p id="feedback" class="feedback" aria-live="polite"></p></section>
 <section class="panel" aria-labelledby="workshop-heading"><h2 id="workshop-heading">Rig workshop</h2><div class="group"><div class="small-label">Spend play points only</div><button id="upgrade" class="secondary">Upgrade virtual miner</button><small>No real purchase; unlock a bigger imaginary hash rate.</small></div><div class="group"><button id="boost" class="secondary">2× boost</button><small>Boosts apply to demo points, not Bitcoin or cash.</small></div><div class="group"><span class="small-label">Real reward lane</span><button disabled aria-disabled="true">Watch ad → real sats (not available)</button><small>Will require an approved ad supplier, financial reserve and verified payout before activation. Our own house promotions never pay sats.</small></div><div class="group"><span class="small-label">Total pretend points produced</span><strong id="all-time">0</strong><button id="reset" class="tertiary">Reset my local demo</button></div></section>
 </div></details>
 <section class="panel widepanel" aria-labelledby="discover-heading"><div class="small-label">House promotions · Zero reward</div><h2 id="discover-heading">While your virtual rig hums…</h2><p>These are genuine links to other 561 Group properties. Visiting them earns no sats, points, or mining income.</p><div class="promos">${cards}</div></section>
@@ -184,11 +185,23 @@ export async function build({configPath, outPath, assistRoot, publicRoot}) {
       site.serviceInstanceSource?.recordPath !== owner.path + '/assist-instance.json') {
     throw new TypeError('site must select its real ASSIST app and that product owner, not a parallel record');
   }
-  const instance = await readPinnedOriginal({
+  const publicRecord = {
     root:publicRoot, spec:site.serviceInstanceSource,
     expectedRepository:owner.repository,
     allowedPath:/^services\/(?:[a-z0-9.-]+\/)*sites\/[a-z0-9-]+\.assist\.561\.group\/assist-instance\.json$/u,
-  });
+  };
+  let instance;
+  try {
+    instance = await readPinnedOriginal(publicRecord);
+  } catch (error) {
+    // The Public section may mount the same site deeper in its services tree.
+    // Preserve the roster's identity and verify the same Git blob at that mount.
+    if (error.code !== 'ENOENT') throw error;
+    const current = resolve(dirname(configPath), 'assist-instance.json');
+    const checkoutPath = relative(await realpath(publicRoot), current).split(sep).join('/');
+    if (!checkoutPath.endsWith('/sites/' + owner.path.split('/').at(-1) + '/assist-instance.json')) throw error;
+    instance = await readPinnedOriginal({...publicRecord, checkoutPath});
+  }
   const serviceProjection = projectAssistPublicServiceInstance({
     app:app.document, instance:instance.document,
     rosterDigest:app.sourceDigest, instanceDigest:instance.sourceDigest,

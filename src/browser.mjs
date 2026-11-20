@@ -5,17 +5,22 @@ import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIE
 const $ = (id) => document.getElementById(id);
 const storageKey = 'virtual-miner:local-demo:v1';
 const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+let preserveStoredRun = false;
 function read() {
   try {
     const raw = localStorage.getItem(storageKey);
-    return raw ? admitDemo(JSON.parse(raw)) : newDemo(Date.now());
+    return raw === null ? newDemo(Date.now()) : admitDemo(JSON.parse(raw));
   } catch {
+    preserveStoredRun = true;
+    $('counter-save-status').textContent = 'Your saved counter could not be read. This session plays temporarily. Use Reset my local demo to replace the saved counter.';
     return newDemo(Date.now());
   }
 }
 let state = read();
 let noticeTimeout;
-function save() { try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { /* private mode */ } }
+function save() {
+  if (preserveStoredRun) return;
+  try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { /* private mode */ } }
 function notice(message) {
   $('feedback').textContent = message;
   clearTimeout(noticeTimeout);
@@ -56,7 +61,9 @@ $('boost').addEventListener('click', () => {
   view();
 });
 $('reset').addEventListener('click', () => {
-  state = newDemo(Date.now()); save(); view(); notice('Local demo reset. Nothing real was ever earned.');
+  preserveStoredRun = false;
+  $('counter-save-status').textContent = '';
+  state = newDemo(Date.now()); view(); notice('Local demo reset. Nothing real was ever earned.');
 });
 view();
 const contracts=mountContractDemo(document);
