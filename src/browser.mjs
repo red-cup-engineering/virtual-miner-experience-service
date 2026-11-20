@@ -1,6 +1,6 @@
 import {mountContractDemo} from './contract-browser.mjs';
 import {mountRegtestCatalogPreview} from './regtest-catalog-client.mjs';
-import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
+import { newDemo, validateDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
 
 const $ = (id) => document.getElementById(id);
 const storageKey = 'virtual-miner:local-demo:v1';
@@ -8,7 +8,7 @@ const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 function read() {
   try {
     const raw = localStorage.getItem(storageKey);
-    return raw ? admitDemo(JSON.parse(raw)) : newDemo(Date.now());
+    return raw ? validateDemo(JSON.parse(raw)) : newDemo(Date.now());
   } catch {
     return newDemo(Date.now());
   }

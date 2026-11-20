@@ -1,5 +1,5 @@
 import {
-  admitSimulationPlans,newContractSession,projectContractSession,
+  validateSimulationPlans,newContractSession,projectContractSession,
   startSimulationContract,claimSimulationPoints,
 } from './contract-experience.mjs';
 
@@ -12,7 +12,7 @@ export function mountContractDemo(dom=document,{clock=()=>Date.now(),storage=glo
   if(!configNode?.dataset?.plans)return {installed:false,reason:'no-demo-plans-selected'};
   const status=dom.getElementById('contract-feedback');
   let plans;
-  try { plans=admitSimulationPlans(JSON.parse(configNode.dataset.plans)); }
+  try { plans=validateSimulationPlans(JSON.parse(configNode.dataset.plans)); }
   catch { if(status)status.textContent='Demo plan configuration unavailable.';return {installed:false,reason:'invalid-plan-config'}; }
   const key='virtual-miner:contract-session:v1';
   const load=()=>{
