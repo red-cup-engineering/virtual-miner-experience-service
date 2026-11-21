@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@red-cup-engineering/assist": "^0.9.0 || 0.9.5-dev.0",
-    "@red-cup-engineering/computer-file-engineering-services-section": "^0.8.16"
+    "@red-cup-engineering/computer-file-engineering-services-section": "^0.8.16 || 0.8.16-dev.0"
   },
   "license": "MIT",
   "funding": {
