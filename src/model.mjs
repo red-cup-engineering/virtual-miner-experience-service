@@ -16,7 +16,7 @@ export function newDemo(now) {
   if (!safeInt(now)) throw new TypeError('timestamp must be a nonnegative safe integer');
   return { version: 1, tier: 0, banked: 0, pending: 0, allTime: 0, lastTickMs: now, boostUntilMs: 0 };
 }
-export function admitDemo(candidate) {
+export function validateDemoState(candidate) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) ||
     candidate.version !== 1 || !safeInt(candidate.tier) || candidate.tier >= TIERS.length ||
     !['banked', 'pending', 'allTime'].every(key => safeInt(candidate[key]) && candidate[key] <= MAX_DEMO_BALANCE) ||
@@ -28,7 +28,7 @@ export function admitDemo(candidate) {
     allTime: candidate.allTime, lastTickMs: candidate.lastTickMs, boostUntilMs: candidate.boostUntilMs };
 }
 export function advanceDemo(candidate, now) {
-  const state = admitDemo(candidate);
+  const state = validateDemoState(candidate);
   if (!safeInt(now)) throw new TypeError('timestamp must be a nonnegative safe integer');
   if (now <= state.lastTickMs) return state;
   const elapsedSeconds = Math.floor(Math.min(now - state.lastTickMs, MAX_OFFLINE_MS) / 1000);
@@ -63,3 +63,6 @@ export function boostDemo(candidate, now) {
   if (state.banked < BOOST_COST) return { state, boosted: false, reason: 'insufficient-demo-points' };
   return { state: { ...state, banked: state.banked - BOOST_COST, boostUntilMs: now + BOOST_DURATION_MS }, boosted: true };
 }
+
+// Earlier published browser clients import this name.
+export { validateDemoState as admitDemo };

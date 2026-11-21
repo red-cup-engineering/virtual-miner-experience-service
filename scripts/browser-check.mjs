@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 export async function check({ wait, click, evaluate, reload }) {
   const key = 'virtual-miner:local-demo:v1';
   const saved = name => JSON.parse(localStorage.getItem(name));
+  await click('#arcade-mode:not([open]) > summary');
   await wait(() => document.querySelector('#claim')?.disabled === false);
   await click('#claim');
   const balance = (await evaluate(saved, key)).banked;
@@ -15,6 +16,7 @@ export async function check({ wait, click, evaluate, reload }) {
   assert.equal((await evaluate(saved, key)).banked, balance);
   await evaluate(name => localStorage.setItem(name, '{unreadable'), key);
   await reload();
+  await click('#arcade-mode:not([open]) > summary');
   await wait(() => document.querySelector('#counter-save-status')?.textContent.includes('temporarily'));
   await wait(() => document.querySelector('#claim').disabled === false);
   await click('#claim');

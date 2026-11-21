@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/p
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { admitSimulationPlans } from '../src/contract-experience.mjs';
+import { validateSimulationPlans } from '../src/contract-experience.mjs';
 import { projectAssistPublicServiceInstance } from '@red-cup-engineering/assist/public-service-instance';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,7 +47,7 @@ async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository,
  * what is absent, but cannot create a payment, sponsor SDK, wallet or sats
  * settlement merely by claiming its operation is ready.
  */
-function admitVirtualMinerOperationalCeiling(operations) {
+function validateSupportedOperations(operations) {
   const allowed = new Map([
     ['play-local-mining-demo', ['local-browser-simulation','source-implemented','not-independently-observed']],
     ['visit-first-party-house-offers', ['external-navigation','source-implemented','not-independently-observed']],
@@ -95,7 +95,7 @@ export function validateConfig(config) {
       !(url.hostname === 'koios.news' || url.hostname === '561.group' || url.hostname.endsWith('.561.group')))
       throw new TypeError('demo house promotion URL must be a verified HTTPS 561 public property');
   }
-  if (config.simulationPlans !== undefined) admitSimulationPlans(config.simulationPlans);
+  if (config.simulationPlans !== undefined) validateSimulationPlans(config.simulationPlans);
   return config;
 }
 export function renderHtml(config, serviceProjection = null) {
@@ -122,7 +122,7 @@ export function renderHtml(config, serviceProjection = null) {
     '</section>' : '';
   const serviceSection = !serviceProjection ? '' :
     '<section class="panel widepanel" aria-labelledby="service-capabilities">' +
-    '<div class="small-label">ASSIST service truth · source-built, public receipt unverified</div>' +
+    '<div class="small-label">ASSIST service status · public availability unverified</div>' +
     '<h2 id="service-capabilities">What this game can and cannot do</h2>' +
     '<p>Browser-only play and house navigation are source-implemented. Real sats, sponsored ads and agent-paid purchases are disabled.</p>' +
     '<ul>' + serviceProjection.declaredOperations.map(op =>
@@ -206,7 +206,7 @@ export async function build({configPath, outPath, assistRoot, publicRoot}) {
     app:app.document, instance:instance.document,
     rosterDigest:app.sourceDigest, instanceDigest:instance.sourceDigest,
   });
-  admitVirtualMinerOperationalCeiling(serviceProjection.declaredOperations);
+  validateSupportedOperations(serviceProjection.declaredOperations);
   const config = validateConfig({
     ...site, brand:serviceProjection.identity.name, host:serviceProjection.identity.host,
     description:site.marketingDescription,
@@ -223,7 +223,7 @@ export async function build({configPath, outPath, assistRoot, publicRoot}) {
     realRewardsEnabled:false, sponsorCallbacksEnabled:false, externalAdsEnabled:false,
     walletOrCustodyEnabled:false, x402PaymentsEnabled:false, playerDepositsAccepted:false,
     playableDemo:true, storage:'local-browser-only',
-    // Source code, installed site and independent visitor receiving differ.
+    // ASSIST reports whether a visitor has independently verified the public service.
     publicReceiving:serviceProjection.publicReceiving,
     sourceLifecycle:serviceProjection.sourceLifecycle,
     authoritativeApp:serviceProjection.identity,

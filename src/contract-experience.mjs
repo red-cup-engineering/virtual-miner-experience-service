@@ -9,7 +9,7 @@ function integer(n,label,max=Number.MAX_SAFE_INTEGER){
   if(!safe(n)||n>max)throw new TypeError(label+" must be a bounded nonnegative integer");
   return n;
 }
-export function admitSimulationPlans(input){
+export function validateSimulationPlans(input){
   if(!Array.isArray(input)||input.length<1||input.length>8)
     throw new TypeError("plans must be 1..8 entries");
   const ids=new Set();
@@ -50,7 +50,7 @@ function accumulated(contracts,byId,second){
   return total;
 }
 function verified(state,plans){
-  const rules=admitSimulationPlans(plans), byId=new Map(rules.map(x=>[x.id,x]));
+  const rules=validateSimulationPlans(plans), byId=new Map(rules.map(x=>[x.id,x]));
   if(!state||state.kind!=="virtual-miner-contract-session/v1"||state.source!=="browser-demo-only"||
     !Array.isArray(state.contracts)||state.contracts.length>MAX_CONTRACTS||
     !safe(state.claimedPoints)||state.claimedPoints>MAX_DEMO_POINTS||!safe(state.lastObservedSec))
@@ -116,3 +116,6 @@ export function claimSimulationPoints(state,plans,now){
   return {claimed:pending,state:{kind:state.kind,source:state.source,
     contracts:input.contracts,claimedPoints:lifetime,lastObservedSec:second}};
 }
+
+// Earlier published browser clients import this name.
+export { validateSimulationPlans as admitSimulationPlans };

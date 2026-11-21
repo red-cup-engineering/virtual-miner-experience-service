@@ -1,6 +1,6 @@
 import {mountContractDemo} from './contract-browser.mjs';
 import {mountRegtestCatalogPreview} from './regtest-catalog-client.mjs';
-import { newDemo, admitDemo, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
+import { newDemo, validateDemoState, advanceDemo, claimDemo, upgradeDemo, boostDemo, TIERS, BOOST_COST } from './model.mjs';
 
 const $ = (id) => document.getElementById(id);
 const storageKey = 'virtual-miner:local-demo:v1';
@@ -9,7 +9,7 @@ let preserveStoredRun = false;
 function read() {
   try {
     const raw = localStorage.getItem(storageKey);
-    return raw === null ? newDemo(Date.now()) : admitDemo(JSON.parse(raw));
+    return raw === null ? newDemo(Date.now()) : validateDemoState(JSON.parse(raw));
   } catch {
     preserveStoredRun = true;
     $('counter-save-status').textContent = 'Your saved counter could not be read. This session plays temporarily. Use Reset my local demo to replace the saved counter.';
