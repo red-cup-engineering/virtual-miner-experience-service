@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /** One reusable publisher: consumer chooses its name, offers and domain. */
+import { protocolDigestHex } from "@red-cup-engineering/cryptographic-computer-data-engineering-services-section/hash";
+import { niUriFromDigest, sha256 } from "@red-cup-engineering/semiotic-content-address-system";
 import { readFile, writeFile, mkdir, copyFile, realpath, lstat } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
 import { join, dirname, resolve, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateSimulationPlans } from '../src/contract-experience.mjs';
@@ -30,14 +31,13 @@ async function readPinnedOriginal({root: selectedRoot, spec, expectedRepository,
     throw new TypeError('virtual miner source must be one bounded regular file');
   }
   const bytes = await readFile(target);
-  const observed = createHash('sha1').update('blob ' + bytes.length + '\0')
-    .update(bytes).digest('hex');
+  const observed = protocolDigestHex("sha1", 'blob ' + bytes.length + '\0', bytes);
   if (observed !== spec.gitBlobSha) {
     throw new TypeError('virtual miner source does not match the selected Git blob');
   }
   return Object.freeze({
     document: JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes)),
-    sourceDigest: 'ni:///sha-256;' + createHash('sha256').update(bytes).digest('base64url'),
+    sourceDigest: niUriFromDigest(sha256(bytes)),
     source: Object.freeze({...spec}),
   });
 }
